@@ -49,20 +49,22 @@ function draw() {
 // Draw keypoints (joints + facial marker)
 // and check if skeleton is in position.
 function drawKeypoints()  {
+  let radius = 20
   for (let i = 0; i < poses.length; i++) {
-
     let leftHandOK = false
     let rightHandOK = false
     for (let j = 0; j < poses[i].pose.keypoints.length; j++) {
       let keypoint = poses[i].pose.keypoints[j];
       if (keypoint.score > 0.2) {
         fill(200, 50, 50);
+        radius = 20
 
         if (keypoint.part == "rightWrist"){
           if (keypoint.position.x < 0.25 * width & 
               keypoint.position.y < 0.25 * height){
             leftHandOK = true
             fill(50, 175, 50)
+            radius = 40
           } 
         } 
 
@@ -71,6 +73,7 @@ function drawKeypoints()  {
               keypoint.position.y > 0.75 * height){
             rightHandOK = true
             fill(50, 175, 50)
+            radius = 40
           }
         }
 
@@ -79,7 +82,7 @@ function drawKeypoints()  {
           showMessage = true
         }
         noStroke();
-        ellipse(keypoint.position.x, keypoint.position.y, 20, 20);
+        ellipse(keypoint.position.x, keypoint.position.y, radius, radius);
       }
     }
   }
