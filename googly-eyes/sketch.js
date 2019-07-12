@@ -1,14 +1,11 @@
-/* posenet-game
-The video is mirrored. Bring the right wrist to the top-left corner and the 
-left write to the bottom right. When both wrist are brought into the right 
-position a secret message is show above the video.
+/* googly-eyes
+Draw googly eyes on a video. Detect the eyes using posenet from ml5.js.
 */
 
 // Globals
 let video;
 let poseNet;
 let poses = [];
-let skeletons = [];
 
 // Video screen size
 const width = 480
@@ -32,11 +29,12 @@ function modelReady() {
 // This function repeats
 function draw() {
   image(video, 0, 0, width, height);
-  anonymize();
+  googly();
 }
 
-function anonymize() {
-
+// Loop over all poses. If a pose is found, look for left and right
+// eye. Draw a googly eye on those.
+function googly() {
   for (i=0; i<poses.length; i++){
     for (j=0; j < poses[i].pose.keypoints.length; j++){
       let keypoint = poses[i].pose.keypoints[j];
