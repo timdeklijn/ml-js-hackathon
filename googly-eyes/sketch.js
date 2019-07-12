@@ -41,18 +41,18 @@ function googly() {
       if (keypoint.part == "leftEye"){
         let lx = keypoint.position.x
         let ly = keypoint.position.y
-        fill(255, 255, 255)
-        ellipse(lx, ly, 45, 45)
+        fill(255, 0, 0)
+        ellipse(lx + 10, ly, 45, 45)
         fill(0,0,0)
-        ellipse(lx + int(random(-7,7)), ly + int(random(-7,7)), 15, 15)
+        ellipse(lx + 10 + int(random(-7,7)), ly + int(random(-7,7)), 15, 15)
       }
       if (keypoint.part == "rightEye"){
         let rx = keypoint.position.x
         let ry = keypoint.position.y
         fill(255, 255, 255)
-        ellipse(rx, ry, 45, 45)
+        ellipse(rx - 10 , ry, 45, 45)
         fill(0,0,0)
-        ellipse(rx + int(random(-7,7)), ry + int(random(-7,7)), 15, 15)
+        ellipse(rx -10 + int(random(-7,7)), ry + int(random(-7,7)), 15, 15)
       }
     }
   }
