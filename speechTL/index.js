@@ -1,15 +1,17 @@
 let recognizer;
 
 // One frame is ~23ms of audio.
-const NUM_FRAMES = 3;
+const NUM_FRAMES = 6;
+const NUM_CLASSES = 4;
 let examples = [];
+const model_mapping = {0:'cat', 1:'dog', 2:'key', 3:'noise'}
 
 const INPUT_SHAPE = [NUM_FRAMES, 232, 1];
 let model;
 
 async function train() {
  toggleButtons(false);
- const ys = tf.oneHot(examples.map(e => e.label), 3);
+ const ys = tf.oneHot(examples.map(e => e.label), NUM_CLASSES);
  const xsShape = [examples.length, ...INPUT_SHAPE];
  const xs = tf.tensor(flatten(examples.map(e => e.vals)), xsShape);
 
@@ -25,19 +27,24 @@ async function train() {
  });
  tf.dispose([xs, ys]);
  toggleButtons(true);
+ await model.save('downloads://my-speech-model');
+}
+
+async function load() {
+    model = await tf.loadLayersModel('http://home/jfranse/Downloads/my-speech-model.json');
 }
 
 function buildModel() {
  model = tf.sequential();
  model.add(tf.layers.depthwiseConv2d({
    depthMultiplier: 8,
-   kernelSize: [NUM_FRAMES, 3],
+   kernelSize: [NUM_FRAMES, NUM_CLASSES],
    activation: 'relu',
    inputShape: INPUT_SHAPE
  }));
  model.add(tf.layers.maxPooling2d({poolSize: [1, 2], strides: [2, 2]}));
  model.add(tf.layers.flatten());
- model.add(tf.layers.dense({units: 3, activation: 'softmax'}));
+ model.add(tf.layers.dense({units: NUM_CLASSES, activation: 'softmax'}));
  const optimizer = tf.train.adam(0.01);
  model.compile({
    optimizer,
@@ -82,6 +89,43 @@ function normalize(x) {
  return x.map(x => (x - mean) / std);
 }
 
+async function moveSlider(labelTensor) {
+ const label = (await labelTensor.data())[0];
+ document.getElementById('console').textContent = label;
+ if (label == NUM_CLASSES-1) {
+   return;
+ }
+ window.open(`sketch.html?model=${model_mapping[label]}`, '_blank');
+ recognizer.stopListening();
+ toggleButtons(true);
+ document.getElementById('listen').textContent = 'Listen';
+}
+
+function listen() {
+ if (recognizer.isListening()) {
+   recognizer.stopListening();
+   toggleButtons(true);
+   document.getElementById('listen').textContent = 'Listen';
+   return;
+ }
+ toggleButtons(false);
+ document.getElementById('listen').textContent = 'Stop';
+ document.getElementById('listen').disabled = false;
+
+ recognizer.listen(async ({spectrogram: {frameSize, data}}) => {
+   const vals = normalize(data.subarray(-frameSize * NUM_FRAMES));
+   const input = tf.tensor(vals, [1, ...INPUT_SHAPE]);
+   const probs = model.predict(input);
+   const predLabel = probs.argMax(1);
+   await moveSlider(predLabel);
+   tf.dispose([input, probs, predLabel]);
+ }, {
+   overlapFactor: 0.999,
+   includeSpectrogram: true,
+   invokeCallbackOnNoiseAndUnknown: true
+ });
+}
+
 function predictWord() {
  // Array of words that the recognizer is trained to recognize.
  const words = recognizer.wordLabels();
@@ -91,14 +135,16 @@ function predictWord() {
    // Find the most probable word.
    scores.sort((s1, s2) => s2.score - s1.score);
    document.querySelector('#console').textContent = scores[0].word;
- }, {probabilityThreshold: 0.75});
+ }, {probabilityThreshold: 0.98});
 }
 
 async function app() {
  recognizer = speechCommands.create('BROWSER_FFT');
  await recognizer.ensureModelLoaded();
- predictWord();
+ //predictWord();
  buildModel();
 }
+
+
 
 app();
